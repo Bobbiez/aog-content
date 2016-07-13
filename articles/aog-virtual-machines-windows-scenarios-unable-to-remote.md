@@ -28,6 +28,15 @@
  
 ![](./media/aog-virtual-machines-windows-scenarios-unable-to-remote/scenario-01-02.png) 
 
+解决方法：Portal上Shutdown再Start虚拟机
+
+这个操作会重置虚拟机的网络适配器，所以对应的适配器的序号会发生变化，同时网卡的MAC地址也会发生改变。
+虚拟机的Node和Container可能会发生变化（概率比较大），即虚拟机可能会发生迁移。
+
+在Windows Events中可以看到网络适配器重新初始化的几条Event日志，例如：
+
+`Miniport NIC 'Microsoft Hyper-V Network Adapter #2' restarted`
+
 ##<a id="scenario02"></a>场景2
 虚拟机启用了Remote Desktop Licensing（远程桌面授权）功能，试用期120天到期后，虚拟机无法正常RDP。
  
@@ -68,6 +77,28 @@
 ![](./media/aog-virtual-machines-windows-scenarios-unable-to-remote/scenario-06-01.png)   
 
 所以，如果过期不及时配置，密码过期后只能重置密码。
+
+解决方法：可以使用powershell脚本。Powershell安装请参照: (https://technet.microsoft.com/en-us/library/jj151815.aspx#bkmk_installmodule)
+
+`$extName = "VMAccessAgent"`
+
+`$publisher = "Microsoft.Compute"`
+
+`$ver = "2.0"`
+
+`$publicConf = '{"UserName":"XXXXX"}'`
+
+`$privateConf = '{"Password":"XXXXXXXX"}'`
+
+`$VM1 = Get-AzureVM -ServiceName '云服务名称' -Name '虚拟机名称'`
+
+`Set-AzureVMExtension -VM $VM1 -ExtensionName $extName -Publisher $publisher -Version $ver -PublicConfiguration` 
+
+`$publicConf -PrivateConfiguration $privateConf | Update-AzureVM`
+
+
+注:密码需满足一定的复杂度，如大小写，数字字母混合等。
+
  
 ##<a id="scenario07"></a>场景7
 一些第三方的安全软件会修改RDP的侦听端口。
